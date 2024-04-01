@@ -20,6 +20,7 @@ This milestone focuses on abstractions and systems support for addressing a set 
 - [Functionality Checklist](#functionality-checklist)
 - [Reflections & The Way Forward](#reflections--the-way-forward)
 - [Tips & Submission](#tips--submission)
+- [FAQ](#faq)
 - [Feedback](#feedback)
 
 
@@ -131,7 +132,7 @@ let cb2 = (e, v) => console.log("I'm called in Node 1: Node 2 has booted!");
 local.status.spawn(conf1, cb2);
 ```
 
-In the example above, `spawn` will create an RPC from `cb1`, then create a function `g` that combines the two, and finally spawn a new process passing that argument.
+In the example above, `spawn` will create an RPC from `cb2`, then create a function `g` that combines the two, and finally spawn a new process passing that argument. `cb1` will be executed on the new spawned node (that’s why we don’t need to create an RPC from `cb1`).
 
 #### Service `groups`
 
@@ -217,7 +218,7 @@ The distributed routes service provides the `routes.put` method. This is a utili
 <br>
 
 ## Instantiating a Service
-So far it might seem as if only two static service groups are possible — `local` and `all` — as services themselves do not seem to decide which nodes to interact with. How does `distribution.browncs.status.get` know which nodes to query without *hardcoding* the nodes in the service upon creation? To allow this, services outside `local` should be developed as closures that return functions bound to a function-specific context; we can think of these closures as *service templates* and these functions and their context as *service instances for a particular group*.
+So far it might seem as if only two static service groups are possible — `local` and `all` — as services themselves do not seem to decide which nodes to interact with. How does `distribution.browncs.status.get` know which nodes to query without *hardcoding* the nodes in the service upon creation? To allow this, services outside `local` should be developed as closures that return functions bound to a function-specific context; we can think of these closures as ***service templates*** and these functions and their context as *service instances for a particular group*.
 
 ```js
 let status = (config) => {
@@ -237,7 +238,7 @@ distribution.all.groups.put("browncs", g, console.log)
 The `put` call above corresponds to the following steps on each node:
 
 1. Call the corresponding `local.groups.put()`
-2. Add a new `browncs` field to the `distribution` object — dynamically this is done by `local.groups.put` passing a `name` field to the `distribution` object: `distribution[name] = {}`
+2. Add a new `browncs` field to the `distribution` object — dynamically this is done by `local.groups.put` passing a `name` (aka `gid`) field to the `distribution` object: `distribution[name] = {}`
 3. Then, for each service in the `distribution.all` object, call the corresponding template to construct a new instance. e.g., 
     ```
     distribution.browncs.status = require("./path/to/status.js")({gid: name})
@@ -245,6 +246,12 @@ The `put` call above corresponds to the following steps on each node:
 
 
 All methods of a service object have some group-specific context associated with them — As a result of this context creation, methods in the instance correspond only to that set of nodes. Aside from the group of nodes corresponding to a service, this process creates new service instances that hold group-specific service configurations.
+
+You should be able to invoke methods for a certain instance by doing something like:
+`global.distribution[context.gid].comm.send(...);`
+where `context.gid` could be:
+1. the actual name of certain group, e.g. browncs
+2. if the following is called inside the template, it could refer to the context variable `context.gid` that is in the scope of the template code 
 
 
 The group-specific service context allows services to have different behaviors based on characteristics of the group — for example, depending on the group size, different gossip intervals and storage consistency guarantees. We will explore this configurability in the next service: `gossip`.
@@ -401,6 +408,26 @@ To create a submission, run `s/submit.sh` from the root folder of M3. This will 
 
 
 You are allowed to submit as many times as you want up until the deadline; so *submit early and often*. For full grade, before submitting the final version of your code make sure that (1) all linters run without any errors, (2) the provided tests run without any errors, and (3) you have provided an additional five or more tests with your implementation.
+
+
+## FAQ
+Below are some common questions and possible solutions
+1. Tests Run Locally but not on the Autograder:
+    - In the `status.spawn` method, make sure that the path to the `distribution.js` file is agnostic to where `status.js` is being require'd from. To achieve this, you can use the `__dirname` global variable provided by the Node runtime, which resolves to the absolute folder path of the current file. In your code, you should have something like: `const correctPath = path.join(__dirname, '../../distribution.js');` (Make sure to require the path module).
+
+2. Spawning a new node:
+    - How to combine 2 callbacks: Take a look at [new Function()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function) and [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) i.e. backtick strings
+    - Make sure the original config.onStart and callback are initialized to an empty function if they're undefined.
+    
+
+3. Keeping a copy of the server for closing?
+    - Considering putting it in `global`
+
+4. Error: callback is not a function 
+    - Ensure that the case where no callback function is passed in is handled properly in each function
+
+5. ECONNREFUSED 
+    - You can do `ps aux | grep node` to see all the node processes running. You can even send requests to it on the command line via `curl`. The error might be because you haven't waited for the server to "launch" appropriately, via the `onStart` callback
 
 
 ## Feedback
