@@ -8,24 +8,19 @@ gossip    Status and information dissemination   send, at, del
 */
 
 /* Comm Service */
-const comm = require('./comm');
+import * as comm from './comm.ts';
 
 /* Groups Service */
-const groups = require('./groups');
+import * as groups from './groups.ts';
 
 /* Routes Service */
-const routes = require('./routes');
+import * as routes from './routes.ts';
 
 /* Status Service */
-const status = require('./status');
+import * as status from './status.ts';
 
 /* Gossip Service */
-const gossip = require('./gossip');
+import * as gossip from './gossip.ts';
 
-module.exports = {
-  comm: comm,
-  groups: groups,
-  status: status,
-  routes: routes,
-  gossip: gossip,
-};
+// Exporting the modules
+export { comm, groups, status, routes, gossip };

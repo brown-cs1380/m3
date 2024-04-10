@@ -1,8 +1,9 @@
-const http = require('http');
-const url = require('url');
+import * as http from 'http';
+import * as url from 'url';
 
-let local = require('../local/local');
-const serialization = require('../util/serialization');
+import * as local from '../local/local.ts';
+import * as serialization from '../util/serialization.js';
+import nodeConfig, { NodeConfig } from './config.ts';
 
 /*
     The start function will be called to start your node.
@@ -11,23 +12,20 @@ const serialization = require('../util/serialization');
 */
 
 
-function isValidBody(body) {
-  error = undefined;
+function isValidBody(body: string): Error | undefined {
   if (body.length === 0) {
     return new Error('No body');
   }
-
   try {
-    body = JSON.parse(body);
+    JSON.parse(body);
   } catch (error) {
     return error;
   }
-
-  return error;
+  return undefined;
 }
 
 
-const start = function(onStart) {
+function start(onStart: (server: http.Server) => void) {
   const server = http.createServer((req, res) => {
     /* Your server will be listening for PUT requests. */
 
@@ -47,10 +45,10 @@ const start = function(onStart) {
     // Write some code...
 
 
-    const pathname = url.parse(req.url).pathname;
+    const pathname: string = url.parse(req.url).pathname;
     const [, service, method] = pathname.split('/');
 
-    console.log(`[SERVER] (${global.nodeConfig.ip}:${global.nodeConfig.port})
+    console.log(`[SERVER] (${nodeConfig.ip}:${nodeConfig.port})
         Request: ${service}:${method}`);
 
 
@@ -72,14 +70,14 @@ const start = function(onStart) {
     // Write some code...
 
 
-    let body = [];
+    let chunks: string[] = [];
 
     req.on('data', (chunk) => {
-      body.push(chunk);
+      chunks.push(chunk);
     });
 
     req.on('end', () => {
-      body = Buffer.concat(body).toString();
+      let body: string = chunks.join('');
 
       let error;
 
@@ -136,12 +134,10 @@ const start = function(onStart) {
     remotely through the service interface.
   */
 
-  server.listen(global.nodeConfig.port, global.nodeConfig.ip, () => {
-    console.log(`Server running at http://${global.nodeConfig.ip}:${global.nodeConfig.port}/`);
+  server.listen(nodeConfig.port, nodeConfig.ip, () => {
+    console.log(`Server running at http://${nodeConfig.ip}:${nodeConfig.port}/`);
     onStart(server);
   });
 };
 
-module.exports = {
-  start: start,
-};
+export default start;
