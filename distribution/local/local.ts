@@ -9,30 +9,20 @@ routes   A mapping from names to functions          get, put
 
 */
 
-/* Status Service */
-
-const status = require('./status');
+/* Comm Service */
+import * as comm from './comm.ts';
 
 /* Groups Service */
-
-const groups = require('./groups');
+import * as groups from './groups.ts';
 
 /* Routes Service */
+import * as routes from './routes.ts';
 
-const routes = require('./routes');
-
-/* Comm Service */
-
-const comm = require('./comm');
+/* Status Service */
+import * as status from './status.ts';
 
 /* Gossip Service */
+import * as gossip from './gossip.ts';
 
-const gossip = require('./gossip');
-
-module.exports = {
-  status: status,
-  routes: routes,
-  comm: comm,
-  groups: groups,
-  gossip: gossip,
-};
+// Exporting the modules
+export { comm, groups, status, routes, gossip };
